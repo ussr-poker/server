@@ -23,7 +23,6 @@ else
     ./configure --enable-sockets
     make -j 4
 
-    mkdir .libs
     cp CMakeLists.txt .libs/CMakeLists.txt
     cp Makefile .libs/Makefile
     cp Makefile.fragments .libs/Makefile.fragments
