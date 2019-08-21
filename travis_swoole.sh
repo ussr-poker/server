@@ -14,7 +14,7 @@ else
 
     git clone https://github.com/swoole/swoole-src.git
     cd swoole-src
-    cp CMakeLists.txt .libs/CMakeLists.txt
+    mkdir .libs && cp CMakeLists.txt .libs/CMakeLists.txt
     phpize
     ./configure --enable-sockets
     make -j 4
