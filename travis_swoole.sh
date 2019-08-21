@@ -9,6 +9,8 @@ then
 else
     echo "swoole.so not existing, build started..."
 
+    rm -rf swoole-src
+
     git clone https://github.com/swoole/swoole-src.git
     cd swoole-src
     phpize
