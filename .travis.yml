@@ -4,6 +4,10 @@ php:
 
 addons:
   postgresql: "11.4"
+  apt:
+    packages:
+      - postgresql-11
+      - postgresql-client-11
 
 services:
   - postgresql
@@ -15,7 +19,7 @@ env:
     - DB_NAME=ussr_poker
     - DB_USER=ussr_poker
     - DB_PASS=secret
-    - DB_PORT=5432
+    - DB_PORT=5433
 
 before_install:
   - psql -c "CREATE DATABASE ussr_poker;" -U postgres
