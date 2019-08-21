@@ -14,7 +14,7 @@ addons:
   postgresql: "11.5"
 
 install:
-  - pecl install swoole
+  - printf "\n" | pecl install swoole
   - composer install
 
 test:
