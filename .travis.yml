@@ -7,11 +7,12 @@ addons:
   postgresql: "11.2"
 
 env:
-  - DB_HOST=postgres
-  - DB_NAME=ussr_poker
-  - DB_USER=ussr_poker
-  - DB_PASS=secret
-  - DB_PORT=5432
+  global:
+    - DB_HOST=postgres
+    - DB_NAME=ussr_poker
+    - DB_USER=ussr_poker
+    - DB_PASS=secret
+    - DB_PORT=5432
 
 before_install:
   - psql -c "CREATE DATABASE ussr_poker;" -U postgres
