@@ -20,7 +20,7 @@ before_install:
 cache:
   directories:
     - /home/travis/swoole-src/modules
-    - /home/travis/swoole-src/libs
+    - /home/travis/swoole-src/.libs
 
 install:
   - bash travis_swoole.sh
