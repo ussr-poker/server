@@ -5,6 +5,9 @@ php:
 addons:
   postgresql: "11.4"
 
+services:
+  - postgresql
+
 env:
   global:
     - DB_HOST=postgres
