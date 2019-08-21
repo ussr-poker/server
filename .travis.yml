@@ -26,7 +26,14 @@ before_script:
   - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres
 
 install:
-  - printf "\n" | pecl install swoole
+  - git clone https://github.com/swoole/swoole-src.git
+  - cd swoole-src
+  - phpize
+  - ./configure --enable-sockets
+  - make -j 4 && make install
+  - cd ../
+  - rm -rf swoole-src
+  - php --ri swoole
   - composer install
 
 test:
