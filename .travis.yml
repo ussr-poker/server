@@ -21,6 +21,7 @@ cache:
   directories:
     - /home/travis/swoole-src/modules
     - /home/travis/swoole-src/.libs
+    - /home/travis/swoole-src/build
 
 install:
   - bash travis_swoole.sh
