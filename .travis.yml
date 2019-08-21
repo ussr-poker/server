@@ -33,6 +33,7 @@ install:
   - make -j 4 && make install
   - cd ../
   - rm -rf swoole-src
+  - echo "extension = swoole.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - php --ri swoole
   - composer install
 
