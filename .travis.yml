@@ -10,6 +10,7 @@ services:
 
 env:
   global:
+    - PG_PORT=5433
     - DB_HOST=postgres
     - DB_NAME=ussr_poker
     - DB_USER=ussr_poker
