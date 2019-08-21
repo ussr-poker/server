@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Unit\Network\Commands;
 
-use App\Database\Database;
 use App\Network\Client;
 use App\Network\Commands\LoginCommand;
 use App\Network\Commands\RegisterCommand;
@@ -12,19 +11,7 @@ use App\Tests\TestCase;
 
 class LoginCommandTest extends TestCase
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        Database::getPdo()->beginTransaction();
-    }
-
-    public function tearDown(): void
-    {
-        parent::tearDown();
-
-        Database::getPdo()->rollBack();
-    }
+    protected bool $transaction = true;
 
     public function testSuccess(): void
     {

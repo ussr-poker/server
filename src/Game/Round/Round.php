@@ -5,11 +5,12 @@ namespace App\Game\Round;
 
 use App\Game\Cards\Card;
 use App\Game\Cards\Deck;
-use App\Game\Events\PlayerStake as PlayerStakeEvent;
-use App\Game\Events\RoundFinished;
-use App\Game\Events\RoundStarted;
-use App\Game\Events\SubRoundFinished;
-use App\Game\Events\SubRoundStarted;
+use App\Game\Events\PlayerStakeEvent;
+use App\Game\Events\RoundFinishedEvent;
+use App\Game\Events\RoundStartedEvent;
+use App\Game\Events\SubRoundFinishedEvent;
+use App\Game\Events\SubRoundStartedEvent;
+use App\Game\Exceptions\NotYourTurnException;
 use App\Game\Game;
 use App\Game\Player;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -107,7 +108,7 @@ class Round
         $this->game = $game;
         $this->onSubRoundFinishedListener = \Closure::fromCallable([$this, 'onSubRoundFinished']);
 
-        $this->eventDispatcher->addListener(SubRoundFinished::NAME, $this->onSubRoundFinishedListener, 1);
+        $this->eventDispatcher->addListener(SubRoundFinishedEvent::NAME, $this->onSubRoundFinishedListener, 1);
     }
 
     public function __destruct()
@@ -117,7 +118,7 @@ class Round
 
     private function unsubscribe(): void
     {
-        $this->eventDispatcher->removeListener(SubRoundFinished::NAME, $this->onSubRoundFinishedListener);
+        $this->eventDispatcher->removeListener(SubRoundFinishedEvent::NAME, $this->onSubRoundFinishedListener);
     }
 
     /**
@@ -170,12 +171,12 @@ class Round
         $this->state = self::STATE_IN_PROGRESS;
 
         $this->eventDispatcher->dispatch(
-            new SubRoundStarted($this->currentSubRound, $this->currentSubRound->getPlayersOrder()[0]),
-            SubRoundStarted::NAME
+            new SubRoundStartedEvent($this->currentSubRound, $this->currentSubRound->getPlayersOrder()[0]),
+            SubRoundStartedEvent::NAME
         );
     }
 
-    public function onSubRoundFinished(SubRoundFinished $event): void
+    public function onSubRoundFinished(SubRoundFinishedEvent $event): void
     {
         $subRoundWinner = $event->getWinner();
 
@@ -194,8 +195,8 @@ class Round
             });
 
             defer(fn () => $this->eventDispatcher->dispatch(
-                new RoundFinished($this, $roundResults[0]->getPlayerStake()->getPlayer(), $roundResults),
-                RoundFinished::NAME
+                new RoundFinishedEvent($this, $roundResults[0]->getPlayerStake()->getPlayer(), $roundResults),
+                RoundFinishedEvent::NAME
             ));
 
             return;
@@ -292,7 +293,7 @@ class Round
 
         $playerWhichStakeAwaited = $this->stakesOrder[$this->stakesCount];
         if ($playerWhichStakeAwaited->id !== $player->id) {
-            throw new \LogicException('Not your turn');
+            throw new NotYourTurnException();
         }
 
         if ($stake > $this->cardsToPlayer) {
@@ -318,7 +319,7 @@ class Round
 
     private function dispatchRoundStartedEvent(Player $firstPlayer): void
     {
-        $this->eventDispatcher->dispatch(new RoundStarted($this, $firstPlayer), RoundStarted::NAME);
+        $this->eventDispatcher->dispatch(new RoundStartedEvent($this, $firstPlayer), RoundStartedEvent::NAME);
     }
 
     private function getSumOfStakes(): int

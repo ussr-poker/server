@@ -4,11 +4,12 @@ declare(strict_types=1);
 namespace App\Game;
 
 use App\Game\Cards\Deck;
-use App\Game\Events\GameFinished;
-use App\Game\Events\GameStarted;
-use App\Game\Events\PlayerStake as PlayerStakeEvent;
-use App\Game\Events\RoundFinished;
-use App\Game\Events\RoundStarted;
+use App\Game\Events\GameFinishedEvent;
+use App\Game\Events\GameStartedEvent;
+use App\Game\Events\PlayerStakeEvent as PlayerStakeEvent;
+use App\Game\Events\RoundFinishedEvent;
+use App\Game\Events\RoundStartedEvent;
+use App\Game\Exceptions\GameIsNotReadyException;
 use App\Game\Round\JokerMove;
 use App\Game\Round\Round;
 use App\Game\Round\RoundsMap;
@@ -64,8 +65,8 @@ class Game
         }
 
 //        $this->eventDispatcher = new EventDispatcher();
-        $this->eventDispatcher->addListener(RoundStarted::NAME, [$this, 'onRoundStarted'], 1);
-        $this->eventDispatcher->addListener(RoundFinished::NAME, [$this, 'onRoundFinished'], 1);
+        $this->eventDispatcher->addListener(RoundStartedEvent::NAME, [$this, 'onRoundStarted'], 1);
+        $this->eventDispatcher->addListener(RoundFinishedEvent::NAME, [$this, 'onRoundFinished'], 1);
         $this->eventDispatcher->addListener(PlayerStakeEvent::NAME, [$this, 'onPlayerStake'], 1);
 
         GameLoggingEventSubscriber::subscribe($this->eventDispatcher);
@@ -81,7 +82,7 @@ class Game
         $roundMap = $this->roundsMap[0];
         $this->currentRound = new Round($this, $roundMap[0], $roundMap[1], $roundMap[2]);
 
-        $this->eventDispatcher->dispatch(new GameStarted($this), GameStarted::NAME);
+        $this->eventDispatcher->dispatch(new GameStartedEvent($this), GameStartedEvent::NAME);
 
         $this->startRound();
     }
@@ -98,7 +99,7 @@ class Game
     public function makeMove(Player $player, int $cardId, ?JokerMove $jokerMove): ?Player
     {
         if (self::STATE_IN_PROGRESS !== $this->state) {
-            throw new \LogicException('Game is not started or finished');
+            throw new GameIsNotReadyException($this);
         }
 
         return $this->currentRound->makeMove($player, $cardId, $jokerMove);
@@ -107,7 +108,7 @@ class Game
     public function makeStake(Player $player, int $stake): void
     {
         if (self::STATE_IN_PROGRESS !== $this->state) {
-            throw new \LogicException('Game is not started or finished');
+            throw new GameIsNotReadyException($this);
         }
 
         $this->currentRound->makeStake($player, $stake);
@@ -118,12 +119,12 @@ class Game
         $this->scoreBoard->addPlayerStake($event->getRound(), $event->getPlayerStake());
     }
 
-    public function onRoundStarted(RoundStarted $event): void
+    public function onRoundStarted(RoundStartedEvent $event): void
     {
         $this->scoreBoard->addEntry($event->getRound());
     }
 
-    public function onRoundFinished(RoundFinished $event): void
+    public function onRoundFinished(RoundFinishedEvent $event): void
     {
         $this->roundsPlayed++;
         $this->roundWinner = $event->getWinner();
@@ -135,7 +136,7 @@ class Game
         if ($this->roundsPlayed === \count($this->roundsMap)) {
             $this->state = self::STATE_FINISHED;
 
-            defer(fn() => $this->eventDispatcher->dispatch(new GameFinished($this), GameFinished::NAME));
+            defer(fn() => $this->eventDispatcher->dispatch(new GameFinishedEvent($this), GameFinishedEvent::NAME));
             return;
         }
 

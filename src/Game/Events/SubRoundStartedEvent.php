@@ -7,7 +7,7 @@ use App\Game\Player;
 use App\Game\Round\SubRound;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class SubRoundStarted extends Event
+class SubRoundStartedEvent extends Event
 {
     public const NAME = 'game.sub_round_started';
 

@@ -12,6 +12,8 @@ class JoinRoomCommand implements CommandInterface
 {
     use ClientAuthenticated;
 
+    public const ID = 4;
+
     private Server $server;
 
     public function __construct(Server $server)
@@ -30,5 +32,10 @@ class JoinRoomCommand implements CommandInterface
 
         $room = $this->server->getRoom($roomId);
         $room->joinPlayer(new Player($client));
+    }
+
+    public function getId(): int
+    {
+        return self::ID;
     }
 }

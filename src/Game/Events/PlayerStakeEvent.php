@@ -7,7 +7,7 @@ use App\Game\Round\PlayerStake as PlayerStakeObject;
 use App\Game\Round\Round;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class PlayerStake extends Event
+class PlayerStakeEvent extends Event
 {
     public const NAME = 'game.player_stake';
 

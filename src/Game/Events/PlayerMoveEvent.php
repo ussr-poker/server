@@ -7,7 +7,7 @@ use App\Game\Round\PlayerMove as PlayerMoveObject;
 use App\Game\Round\SubRound;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class PlayerMove extends Event
+class PlayerMoveEvent extends Event
 {
     public const NAME = 'game.player_move';
 

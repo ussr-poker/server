@@ -9,6 +9,8 @@ use App\Network\Client;
 
 class RegisterCommand implements CommandInterface
 {
+    public const ID = 1;
+
     public function handle(Client $client, $data): User
     {
         [$email, $password, $username] = [$data['email'] ?? null, $data['password'] ?? null, $data['name'] ?? null];
@@ -31,5 +33,10 @@ class RegisterCommand implements CommandInterface
         $hash = \password_hash($password, PASSWORD_BCRYPT);
 
         return $repository->create($email, $hash, $username);
+    }
+
+    public function getId(): int
+    {
+        return self::ID;
     }
 }

@@ -17,6 +17,8 @@ class GetRoomCommand implements CommandInterface
 {
     use ClientAuthenticated;
 
+    public const ID = 7;
+
     private Server $server;
 
     public function __construct(Server $server)
@@ -38,7 +40,7 @@ class GetRoomCommand implements CommandInterface
 
         $players = [];
         foreach ($room->getPlayers() as $player) {
-            $playerRes = ['id' => $player->id, 'name' => $player->name];
+            $playerRes = ['id' => $player->id, 'name' => $player->name, 'isOnline' => $player->isOnline];
 
             if (Game::STATE_IN_PROGRESS === $game->getState()) {
                 $currentRound = $game->getCurrentRound();
@@ -163,5 +165,10 @@ class GetRoomCommand implements CommandInterface
         }
 
         return $result;
+    }
+
+    public function getId(): int
+    {
+        return self::ID;
     }
 }

@@ -13,6 +13,8 @@ class MakeMoveCommand implements CommandInterface
 {
     use ClientAuthenticated;
 
+    public const ID = 6;
+
     private Server $server;
 
     public function __construct(Server $server)
@@ -50,5 +52,10 @@ class MakeMoveCommand implements CommandInterface
         $player = $room->getPlayerById($client->getUser()->id);
 
         $room->getGame()->makeMove($player, $cardId, $jokerMove);
+    }
+
+    public function getId(): int
+    {
+        return self::ID;
     }
 }

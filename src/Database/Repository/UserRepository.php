@@ -60,6 +60,7 @@ SQL;
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(1, $email);
+        $stmt->execute();
 
         return 0 !== $stmt->rowCount();
     }
@@ -74,6 +75,7 @@ SQL;
 
         $stmt = $this->pdo->prepare($sql);
         $stmt->bindValue(1, $name);
+        $stmt->execute();
 
         return 0 !== $stmt->rowCount();
     }

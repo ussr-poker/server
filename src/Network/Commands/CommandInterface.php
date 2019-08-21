@@ -8,4 +8,6 @@ use App\Network\Client;
 interface CommandInterface
 {
     public function handle(Client $client, $data);
+
+    public function getId(): int;
 }

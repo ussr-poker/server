@@ -4,8 +4,9 @@ declare(strict_types=1);
 namespace App\Game\Round;
 
 use App\Game\Cards\Card;
-use App\Game\Events\SubRoundFinished;
-use App\Game\Events\PlayerMove as PlayerMoveEvent;
+use App\Game\Events\SubRoundFinishedEvent;
+use App\Game\Events\PlayerMoveEvent;
+use App\Game\Exceptions\NotYourTurnException;
 use App\Game\Player;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
@@ -92,7 +93,7 @@ class SubRound
         $player = $playerDeck->getPlayer();
 
         if ($player->id !== $awaitedPlayer->id) {
-            throw new \LogicException('Not your turn');
+            throw new NotYourTurnException();
         }
 
         // TODO: Add Lock
@@ -134,7 +135,7 @@ class SubRound
             \usort($playerMoves, [$this, 'sortWinnerCallback']);
 
             $winner = $playerMoves[0]->getPlayer();
-            go(fn() => $this->eventDispatcher->dispatch(new SubRoundFinished($this, $winner), SubRoundFinished::NAME));
+            go(fn() => $this->eventDispatcher->dispatch(new SubRoundFinishedEvent($this, $winner), SubRoundFinishedEvent::NAME));
 
             return $winner;
         }

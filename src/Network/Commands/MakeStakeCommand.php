@@ -11,6 +11,8 @@ class MakeStakeCommand implements CommandInterface
 {
     use ClientAuthenticated;
 
+    public const ID = 5;
+
     private Server $server;
 
     public function __construct(Server $server)
@@ -31,5 +33,10 @@ class MakeStakeCommand implements CommandInterface
         $player = $room->getPlayerById($client->getUser()->id);
 
         $room->getGame()->makeStake($player, $stake);
+    }
+
+    public function getId(): int
+    {
+        return self::ID;
     }
 }

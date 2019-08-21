@@ -1,20 +1,19 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Game\Events;
+namespace App\Game\Exceptions;
 
 use App\Game\Game;
-use Symfony\Contracts\EventDispatcher\Event;
 
-class GameStarted extends Event
+class GameIsNotReadyException extends \LogicException
 {
-    public const NAME = 'game.started';
-
     private Game $game;
 
     public function __construct(Game $game)
     {
         $this->game = $game;
+
+        parent::__construct('Game is not started or finished');
     }
 
     public function getGame(): Game

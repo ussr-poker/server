@@ -3,14 +3,13 @@ declare(strict_types=1);
 
 namespace App\Network;
 
-use App\Game\Events\PlayerMove as PlayerMoveEvent;
-use App\Game\Events\PlayerStake as PlayerStakeEvent;
-use App\Game\Events\RoundFinished;
-use App\Game\Events\RoundStarted;
-use App\Game\Events\SubRoundFinished;
-use App\Game\Events\SubRoundStarted;
+use App\Game\Events\PlayerMoveEvent;
+use App\Game\Events\PlayerStakeEvent;
+use App\Game\Events\RoundFinishedEvent;
+use App\Game\Events\RoundStartedEvent;
+use App\Game\Events\SubRoundFinishedEvent;
+use App\Game\Events\SubRoundStartedEvent;
 use App\Game\Room;
-use App\Game\Round\RoundResult;
 use App\Network\Commands\CommandInterface;
 use App\Network\Commands\CreateRoomCommand;
 use App\Network\Commands\GetRoomCommand;
@@ -19,13 +18,33 @@ use App\Network\Commands\LoginCommand;
 use App\Network\Commands\MakeMoveCommand;
 use App\Network\Commands\MakeStakeCommand;
 use App\Network\Commands\RegisterCommand;
-use App\Network\Events\PlayerJoinedEvent;
+use App\Game\Events\PlayerJoinedEvent;
 use App\Network\Events\RoomCreated;
+use App\Network\Notifications\NotificationInterface;
+use App\Network\Notifications\PlayerConnectedNotification;
+use App\Network\Notifications\PlayerDisconnectedNotification;
+use App\Network\Notifications\PlayerJoinedNotification;
+use App\Network\Notifications\PlayerMoveNotification;
+use App\Network\Notifications\PlayerStakeNotification;
+use App\Network\Notifications\RoundFinishedNotification;
+use App\Network\Notifications\RoundStartedNotification;
+use App\Network\Notifications\SubRoundFinishedNotification;
+use App\Network\Notifications\SubRoundStartedNotification;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Server
 {
     private \Swoole\WebSocket\Server $server;
+
+    /**
+     * @var CommandInterface[]
+     */
+    private array $commands = [];
+
+    /**
+     * @var NotificationInterface[]
+     */
+    private array $notifications = [];
 
     /**
      * @var Client[]
@@ -39,18 +58,53 @@ class Server
 
     private EventDispatcher $eventDispatcher;
 
-    public function start(string $host = '127.0.0.1', int $port = 9501): void
+    public function __construct()
     {
-        $this->eventDispatcher = new EventDispatcher();
-        $this->eventDispatcher->addListener(PlayerJoinedEvent::NAME, [$this, 'onPlayerJoined']);
+        /* @var CommandInterface[] $commands */
+        $commands = [
+            new RegisterCommand(),
+            new LoginCommand($this),
+            new CreateRoomCommand($this),
+            new JoinRoomCommand($this),
+            new MakeStakeCommand($this),
+            new MakeMoveCommand($this),
+            new GetRoomCommand($this),
+        ];
 
-        $this->eventDispatcher->addListener(RoundStarted::NAME, [$this, 'onRoundStarted']);
-        $this->eventDispatcher->addListener(RoundFinished::NAME, [$this, 'onRoundFinished']);
+        foreach ($commands as $command) {
+            $this->commands[$command->getId()] = $command;
+        }
+
+        /* @var NotificationInterface[] $notifications */
+        $notifications = [
+            new PlayerJoinedNotification($this),
+            new PlayerMoveNotification($this),
+            new PlayerStakeNotification($this),
+            new RoundStartedNotification($this),
+            new RoundFinishedNotification($this),
+            new SubRoundStartedNotification($this),
+            new SubRoundFinishedNotification($this),
+            new PlayerDisconnectedNotification($this),
+            new PlayerConnectedNotification($this)
+        ];
+
+        foreach ($notifications as $notification) {
+            $this->notifications[$notification->getId()] = $notification;
+        }
+
+        $this->eventDispatcher = new EventDispatcher();
+
+        $this->eventDispatcher->addListener(PlayerJoinedEvent::NAME, [$this, 'onPlayerJoined']);
+        $this->eventDispatcher->addListener(RoundStartedEvent::NAME, [$this, 'onRoundStarted']);
+        $this->eventDispatcher->addListener(RoundFinishedEvent::NAME, [$this, 'onRoundFinished']);
         $this->eventDispatcher->addListener(PlayerStakeEvent::NAME, [$this, 'onPlayerStake']);
         $this->eventDispatcher->addListener(PlayerMoveEvent::NAME, [$this, 'onPlayerMove']);
-        $this->eventDispatcher->addListener(SubRoundStarted::NAME, [$this, 'onSubRoundStarted']);
-        $this->eventDispatcher->addListener(SubRoundFinished::NAME, [$this, 'onSubRoundFinished']);
+        $this->eventDispatcher->addListener(SubRoundStartedEvent::NAME, [$this, 'onSubRoundStarted']);
+        $this->eventDispatcher->addListener(SubRoundFinishedEvent::NAME, [$this, 'onSubRoundFinished']);
+    }
 
+    public function start(string $host = '127.0.0.1', int $port = 9501): void
+    {
 //        $this->server = new \Swoole\Server($host, $port, SWOOLE_BASE, SWOOLE_SOCK_TCP);
         $this->server = new \Swoole\WebSocket\Server($host, $port, SWOOLE_BASE, SWOOLE_SOCK_TCP);
         $this->server->set([
@@ -127,26 +181,15 @@ class Server
             return;
         }
 
-        /* @var CommandInterface[] $commands */
-        $commands = [
-            1 => new RegisterCommand(),
-            2 => new LoginCommand($this),
-            3 => new CreateRoomCommand($this),
-            4 => new JoinRoomCommand($this),
-            5 => new MakeStakeCommand($this),
-            6 => new MakeMoveCommand($this),
-            7 => new GetRoomCommand($this),
-        ];
-
         $commandId = (int)($payload['commandId'] ?? 0);
         $commandPayload = $payload['commandPayload'] ?? null;
 
-        if (!isset($commands[$commandId])) {
+        if (!isset($this->commands[$commandId])) {
             $server->send($fd, 'unknown_command');
             return;
         }
 
-        $command = $commands[$commandId];
+        $command = $this->commands[$commandId];
         try {
             $commandRes = $command->handle($client, $commandPayload);
             $response = \json_encode(['ok' => true, 'res' => $commandRes]);
@@ -170,55 +213,105 @@ class Server
         try {
             $payload = \json_decode($data, true, 5, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
-            $server->push($fd, 'wrong_payload');
+            $this->sendMessage($client, \json_encode(['ok' => false, 'res' => 'wrong_payload']));
             return;
         }
-
-        /* @var CommandInterface[] $commands */
-        $commands = [
-            1 => new RegisterCommand(),
-            2 => new LoginCommand($this),
-            3 => new CreateRoomCommand($this),
-            4 => new JoinRoomCommand($this),
-            5 => new MakeStakeCommand($this),
-            6 => new MakeMoveCommand($this),
-            7 => new GetRoomCommand($this),
-        ];
 
         $commandId = (int)($payload['commandId'] ?? 0);
         $commandPayload = $payload['commandPayload'] ?? null;
 
-        if (!isset($commands[$commandId])) {
-            $server->push($fd, \json_encode(['ok' => false, 'res' => 'unknown_command']));
+        if (!isset($this->commands[$commandId])) {
+            $this->sendMessage($client, \json_encode(['ok' => false, 'res' => 'unknown_command']));
             return;
         }
 
-        $command = $commands[$commandId];
+        $command = $this->commands[$commandId];
+
+        // asynchronous command handling
+        go(fn () => $this->handleCommand($client, $command, $commandPayload));
+    }
+
+    private function handleCommand(Client $client, CommandInterface $command, $commandPayload): void
+    {
         try {
             $commandRes = $command->handle($client, $commandPayload);
             $response = \json_encode([
                 'ok' => true,
-                'commandId' => $commandId,
+                'commandId' => $command->getId(),
                 'commandRes' => $commandRes
             ]);
         } catch (\Throwable $e) {
             $response = \json_encode([
                 'ok' => false,
-                'commandId' => $commandId,
+                'commandId' => $command->getId(),
                 'commandRes' => $e->getMessage()
             ]);
         }
 
-        $server->push($fd, $response);
+        $this->sendMessage($client, $response);
     }
 
     public function onClose($server, $fd): void
     {
+        $client = $this->clients[$fd];
+        $user = $client->getUser();
+        if ($user) {
+            $this->onPlayerDisconnected($user->id);
+        }
+
         unset($this->clients[$fd]);
 
         \logger()->info('Client disconnected', [
             'fd' => $fd
         ]);
+    }
+
+    public function sendMessage(Client $client, $data): void
+    {
+        if ($this->disconnectBadClient($client->getFd())) {
+            throw new \LogicException('Client disconnected');
+        }
+
+        $this->server->push($client->getFd(), $data);
+    }
+
+    public function broadcast(
+        Room $room,
+        int $commandId,
+        $data,
+        ?int $exceptPlayerId = null,
+        array $playerSpecificData = []
+    ): void {
+        foreach ($room->getPlayers() as $player) {
+            if (null !== $exceptPlayerId && $player->id === $exceptPlayerId) {
+                continue;
+            }
+
+            $client = $player->getClient();
+
+            \logger()->info('Sending notification to player', [
+                'fd' => $client->getFd(),
+                'id' => $client->getUser()->id,
+                'name' => $client->getUser()->name
+            ]);
+
+            try {
+                $message = \json_encode([
+                    'ok' => true,
+                    'commandId' => $commandId,
+                    'commandRes' => $data + ($playerSpecificData[$player->id] ?? [])
+                ]);
+
+                $this->sendMessage($client, $message);
+            } catch (\Throwable $e) {
+                \logger()->info('Unable to send notification to player', [
+                    'reason' => $e->getMessage(),
+                    'fd' => $client->getFd(),
+                    'id' => $client->getUser()->id,
+                    'name' => $client->getUser()->name
+                ]);
+            }
+        }
     }
 
     public function createRoom(int $players, int $deckSize): Room
@@ -248,181 +341,49 @@ class Server
         return $this->rooms;
     }
 
+    public function onPlayerDisconnected(int $playerId): void
+    {
+        $this->notifications[PlayerDisconnectedNotification::ID]->handle($playerId);
+    }
+
+    public function onPlayerConnected(int $playerId): void
+    {
+        $this->notifications[PlayerConnectedNotification::ID]->handle($playerId);
+    }
+
     public function onPlayerJoined(PlayerJoinedEvent $event): void
     {
-        $player = $event->getPlayer();
-        $data = [
-            'id' => $player->id,
-            'name' => $player->name
-        ];
-
-        $this->broadcast($event->getRoom(), 1000, $data, $player->id);
+        $this->notifications[PlayerJoinedNotification::ID]->handle($event);
     }
 
-    public function onRoundStarted(RoundStarted $event): void
+    public function onRoundStarted(RoundStartedEvent $event): void
     {
-        $round = $event->getRound();
-        $trump = $round->getTrump();
-        $room = $round->getGame()->getRoom();
-
-        $data = [
-            'number' => $round->getNumber(),
-            'cardsCount' => $round->getCardsToPlayer(),
-            'type' => $round->getType(),
-            'state' => $round->getState(),
-            'trump' => [
-                'suit' => $trump->getSuit()->getSuit(),
-                'value' => $trump->getValue()
-            ],
-            'awaitedPlayerId' => $round->getPlayerAwaited()->id ?? null
-        ];
-
-        $playerSpecificData = [];
-        foreach ($room->getPlayers() as $player) {
-            $cards = [];
-
-            $playerDeck = $round->getPlayerDeck($player);
-            foreach ($playerDeck->getCards() as $cardId => $card) {
-                $cards[] = [
-                    'id' => $cardId,
-                    'suit' => $card->getSuit()->getSuit(),
-                    'value' => $card->getValue()
-                ];
-            }
-
-            $playerSpecificData[$player->id]['cards'] = $cards;
-        }
-
-        $this->broadcast($room, 1001, $data, null, $playerSpecificData);
+        $this->notifications[RoundStartedNotification::ID]->handle($event);
     }
 
-    public function onRoundFinished(RoundFinished $event): void
+    public function onRoundFinished(RoundFinishedEvent $event): void
     {
-        $round = $event->getRound();
-
-        $results = \array_map(static function (RoundResult $result) {
-            $playerStake = $result->getPlayerStake();
-
-            return [
-                'playerId' => $playerStake->getPlayer()->id,
-                'stake' => $playerStake->getStake(),
-                'wins' => $result->getWins(),
-                'score' => $result->getScoreResult()
-            ];
-        }, $event->getRoundResults());
-
-        $data = [
-            'number' => $round->getNumber(),
-            'winnerId' => $event->getWinner()->id,
-            'results' => $results
-        ];
-
-        $this->broadcast($round->getGame()->getRoom(), 1002, $data);
+        $this->notifications[RoundFinishedNotification::ID]->handle($event);
     }
 
     public function onPlayerStake(PlayerStakeEvent $event): void
     {
-        $playerStake = $event->getPlayerStake();
-
-        $data = [
-            'playerId' => $playerStake->getPlayer()->id,
-            'stake' => $playerStake->getStake(),
-            'awaitedPlayerId' => $event->getRound()->getPlayerAwaited()->id ?? null
-        ];
-
-        $this->broadcast($event->getRound()->getGame()->getRoom(), 1003, $data);
+        $this->notifications[PlayerStakeNotification::ID]->handle($event);
     }
 
     public function onPlayerMove(PlayerMoveEvent $event): void
     {
-        $playerMove = $event->getPlayerMove();
-        $card = $playerMove->getCard();
-
-        $formattedJokerMove = null;
-        $jokerMove = $playerMove->getJokerMove();
-        if (null !== $jokerMove) {
-            $formattedJokerMove = [
-                'mode' => $jokerMove->getMode(),
-                'suit' => $jokerMove->getSuit()->getSuit(),
-            ];
-        }
-
-        $data = [
-            'playerId' => $playerMove->getPlayer()->id,
-            'card' => [
-                'id' => $event->getCardId(),
-                'suit' => $card->getSuit()->getSuit(),
-                'value' => $card->getValue()
-            ],
-            'jokerMove' => $formattedJokerMove,
-            'awaitedPlayerId' => $event->getSubRound()->getRound()->getPlayerAwaited()->id ?? null
-        ];
-
-        $this->broadcast($event->getSubRound()->getRound()->getGame()->getRoom(), 1004, $data);
+        $this->notifications[PlayerMoveNotification::ID]->handle($event);
     }
 
-    public function onSubRoundStarted(SubRoundStarted $event): void
+    public function onSubRoundStarted(SubRoundStartedEvent $event): void
     {
-        $subRound = $event->getSubRound();
-
-        $data = [
-            'number' => $subRound->getNumber(),
-            'awaitedPlayerId' => $subRound->getRound()->getPlayerAwaited()->id ?? null
-        ];
-
-        $this->broadcast($subRound->getRound()->getGame()->getRoom(), 1005, $data);
+        $this->notifications[SubRoundStartedNotification::ID]->handle($event);
     }
 
-    public function onSubRoundFinished(SubRoundFinished $event): void
+    public function onSubRoundFinished(SubRoundFinishedEvent $event): void
     {
-        $subRound = $event->getSubRound();
-
-        $data = [
-            'winnerId' => $event->getWinner()->id,
-            'number' => $subRound->getNumber()
-        ];
-
-        $this->broadcast($subRound->getRound()->getGame()->getRoom(), 1006, $data);
-    }
-
-    private function broadcast(
-        Room $room,
-        int $commandId,
-        $data,
-        ?int $exceptPlayerId = null,
-        array $playerSpecificData = []
-    ): void {
-        foreach ($room->getPlayers() as $player) {
-            if (null !== $exceptPlayerId && $player->id === $exceptPlayerId) {
-                continue;
-            }
-
-            $client = $player->getClient();
-            if ($this->disconnectBadClient($client->getFd())) {
-                continue;
-            }
-
-            \logger()->info('Sending notification to player', [
-                'fd' => $client->getFd(),
-                'id' => $client->getUser()->id,
-                'name' => $client->getUser()->name
-            ]);
-
-            try {
-                $this->server->push($client->getFd(), \json_encode([
-                    'ok' => true,
-                    'commandId' => $commandId,
-                    'commandRes' => $data + ($playerSpecificData[$player->id] ?? [])
-                ]));
-            } catch (\Throwable $e) {
-                \logger()->info('Unable to send notification to player', [
-                    'reason' => $e->getMessage(),
-                    'fd' => $client->getFd(),
-                    'id' => $client->getUser()->id,
-                    'name' => $client->getUser()->name
-                ]);
-            }
-        }
+        $this->notifications[SubRoundFinishedNotification::ID]->handle($event);
     }
 
     private function disconnectBadClient(int $fd): bool

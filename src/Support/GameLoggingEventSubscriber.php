@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Game\Events\GameFinished;
-use App\Game\Events\GameStarted;
-use App\Game\Events\PlayerMove as PlayerMoveEvent;
-use App\Game\Events\PlayerStake as PlayerStakeEvent;
-use App\Game\Events\RoundFinished;
-use App\Game\Events\RoundStarted;
-use App\Game\Events\SubRoundFinished;
-use App\Game\Events\SubRoundStarted;
+use App\Game\Events\GameFinishedEvent;
+use App\Game\Events\GameStartedEvent;
+use App\Game\Events\PlayerMoveEvent as PlayerMoveEvent;
+use App\Game\Events\PlayerStakeEvent as PlayerStakeEvent;
+use App\Game\Events\RoundFinishedEvent;
+use App\Game\Events\RoundStartedEvent;
+use App\Game\Events\SubRoundFinishedEvent;
+use App\Game\Events\SubRoundStartedEvent;
 use Psr\EventDispatcher\EventDispatcherInterface;
 
 class GameLoggingEventSubscriber
@@ -45,11 +45,11 @@ class GameLoggingEventSubscriber
             \logger()->info('Game finished');
         });
 
-        static::$roundStarted = \Closure::fromCallable(static function (RoundStarted $event) {
+        static::$roundStarted = \Closure::fromCallable(static function (RoundStartedEvent $event) {
             \logger()->info('Game round started', ['round' => $event->getRound()->getNumber()]);
         });
 
-        static::$roundFinished = \Closure::fromCallable(static function (RoundFinished $event) {
+        static::$roundFinished = \Closure::fromCallable(static function (RoundFinishedEvent $event) {
             $round = $event->getRound();
             $winner = $event->getWinner();
             $result = [];
@@ -72,7 +72,7 @@ class GameLoggingEventSubscriber
             ]);
         });
 
-        static::$subRoundStarted = \Closure::fromCallable(static function (SubRoundStarted $event) {
+        static::$subRoundStarted = \Closure::fromCallable(static function (SubRoundStartedEvent $event) {
             $subRound = $event->getSubRound();
             $round = $subRound->getRound();
 
@@ -82,7 +82,7 @@ class GameLoggingEventSubscriber
             ]);
         });
 
-        static::$subRoundFinished = \Closure::fromCallable(static function (SubRoundFinished $event) {
+        static::$subRoundFinished = \Closure::fromCallable(static function (SubRoundFinishedEvent $event) {
             $subRound = $event->getSubRound();
             $round = $subRound->getRound();
             $winner = $event->getWinner();
@@ -140,14 +140,14 @@ class GameLoggingEventSubscriber
             static::initialize();
         }
 
-        $eventDispatcher->removeListener(GameStarted::NAME, static::$gameStarted);
-        $eventDispatcher->removeListener(GameFinished::NAME, static::$gameFinished);
+        $eventDispatcher->removeListener(GameStartedEvent::NAME, static::$gameStarted);
+        $eventDispatcher->removeListener(GameFinishedEvent::NAME, static::$gameFinished);
 
-        $eventDispatcher->removeListener(RoundStarted::NAME, static::$roundStarted);
-        $eventDispatcher->removeListener(RoundFinished::NAME, static::$roundFinished);
+        $eventDispatcher->removeListener(RoundStartedEvent::NAME, static::$roundStarted);
+        $eventDispatcher->removeListener(RoundFinishedEvent::NAME, static::$roundFinished);
 
-        $eventDispatcher->removeListener(SubRoundStarted::NAME, static::$subRoundStarted);
-        $eventDispatcher->removeListener(SubRoundFinished::NAME, static::$subRoundFinished);
+        $eventDispatcher->removeListener(SubRoundStartedEvent::NAME, static::$subRoundStarted);
+        $eventDispatcher->removeListener(SubRoundFinishedEvent::NAME, static::$subRoundFinished);
 
         $eventDispatcher->removeListener(PlayerStakeEvent::NAME, static::$playerStake);
         $eventDispatcher->removeListener(PlayerMoveEvent::NAME, static::$playerMove);
@@ -162,14 +162,14 @@ class GameLoggingEventSubscriber
             static::initialize();
         }
 
-        $eventDispatcher->addListener(GameStarted::NAME, static::$gameStarted);
-        $eventDispatcher->addListener(GameFinished::NAME, static::$gameFinished);
+        $eventDispatcher->addListener(GameStartedEvent::NAME, static::$gameStarted);
+        $eventDispatcher->addListener(GameFinishedEvent::NAME, static::$gameFinished);
 
-        $eventDispatcher->addListener(RoundStarted::NAME, static::$roundStarted);
-        $eventDispatcher->addListener(RoundFinished::NAME, static::$roundFinished);
+        $eventDispatcher->addListener(RoundStartedEvent::NAME, static::$roundStarted);
+        $eventDispatcher->addListener(RoundFinishedEvent::NAME, static::$roundFinished);
 
-        $eventDispatcher->addListener(SubRoundStarted::NAME, static::$subRoundStarted);
-        $eventDispatcher->addListener(SubRoundFinished::NAME, static::$subRoundFinished);
+        $eventDispatcher->addListener(SubRoundStartedEvent::NAME, static::$subRoundStarted);
+        $eventDispatcher->addListener(SubRoundFinishedEvent::NAME, static::$subRoundFinished);
 
         $eventDispatcher->addListener(PlayerStakeEvent::NAME, static::$playerStake);
         $eventDispatcher->addListener(PlayerMoveEvent::NAME, static::$playerMove);

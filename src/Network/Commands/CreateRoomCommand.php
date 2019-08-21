@@ -12,6 +12,8 @@ class CreateRoomCommand implements CommandInterface
 {
     use ClientAuthenticated;
 
+    public const ID = 3;
+
     private Server $server;
 
     public function __construct(Server $server)
@@ -29,5 +31,10 @@ class CreateRoomCommand implements CommandInterface
         $room->joinPlayer(new Player($client));
 
         return ['id' => $room->getId()];
+    }
+
+    public function getId(): int
+    {
+        return self::ID;
     }
 }

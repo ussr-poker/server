@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 namespace App\Game;
 
-use App\Network\Events\PlayerJoinedEvent;
+use App\Game\Exceptions\PlayerAlreadyInRoomException;
+use App\Game\Exceptions\PlayerNotFoundException;
+use App\Game\Exceptions\RoomIsFullException;
+use App\Game\Events\PlayerJoinedEvent;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class Room
@@ -33,23 +36,20 @@ class Room
         $this->id = static::$roomsCount;
     }
 
-    public function joinPlayer(Player $player)
+    public function joinPlayer(Player $player): void
     {
-        if ($this->playersNeeded === \count($this->players)) {
-            throw new \LogicException('Room is full');
+        try {
+            $this->getPlayerById($player->id);
+
+            throw new PlayerAlreadyInRoomException($this, $player);
+        } catch (PlayerNotFoundException $e) {
         }
 
-        $playerIsInRoom = false;
-        foreach ($this->players as $roomPlayer) {
-            if ($roomPlayer->id === $player->id) {
-                $roomPlayer->setClient($player->getClient());
-                $playerIsInRoom = true;
-                break;
-            }
+        if ($this->playersNeeded === \count($this->players)) {
+            throw new RoomIsFullException($this);
         }
-        if (!$playerIsInRoom) {
-            $this->players[] = $player;
-        }
+
+        $this->players[] = $player;
 
         \logger()->info('Room player joined', ['roomId' => $this->id, 'playerId' => $player->id]);
         $this->serverEventDispatcher->dispatch(new PlayerJoinedEvent($this, $player), PlayerJoinedEvent::NAME);
@@ -57,11 +57,6 @@ class Room
         if ($this->playersNeeded === \count($this->players)) {
             $this->game->startGame();
         }
-    }
-
-    public function onPlayerDisconnect(Player $disconnectedPlayer): void
-    {
-
     }
 
     public function getPlayerById(int $id): Player
@@ -72,7 +67,7 @@ class Room
             }
         }
 
-        throw new \LogicException('Player not found');
+        throw new PlayerNotFoundException($id);
     }
 
     /**

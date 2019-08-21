@@ -6,7 +6,7 @@ namespace App\Game\Events;
 use App\Game\Game;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class GameFinished extends Event
+class GameFinishedEvent extends Event
 {
     public const NAME = 'game.finished';
 

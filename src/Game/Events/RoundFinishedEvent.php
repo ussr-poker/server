@@ -8,7 +8,7 @@ use App\Game\Round\Round;
 use App\Game\Round\RoundResult;
 use Symfony\Contracts\EventDispatcher\Event;
 
-class RoundFinished extends Event
+class RoundFinishedEvent extends Event
 {
     public const NAME = 'game.round_finished';
 

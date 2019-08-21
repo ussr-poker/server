@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Network\Events;
+namespace App\Game\Events;
 
 use App\Game\Player;
 use App\Game\Room;
