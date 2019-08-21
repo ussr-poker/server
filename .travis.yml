@@ -14,11 +14,10 @@ env:
     - DB_PASS=secret
     - DB_PORT=5432
 
-before_install:
+install:
   - psql -c "CREATE DATABASE ussr_poker;" -U postgres
   - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres
 
-install:
   - printf "\n" | pecl install swoole
   - composer install
 
