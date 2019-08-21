@@ -1,12 +1,22 @@
+dist: bionic
 language: php
 php:
   - '7.4snapshot'
 
+env:
+  global:
+    - POSTGRES_DB: ussr_poker
+
 services:
-  - postgresql: "11"
+  - postgresql
+
+addons:
+  postgresql: "11.5"
 
 install:
+  - pecl install swoole
   - composer install
 
 test:
+  - php migrate.php
   - vendor/bin/phpunit
