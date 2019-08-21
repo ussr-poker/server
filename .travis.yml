@@ -1,4 +1,3 @@
-dist: bionic
 language: php
 php:
   - '7.4snapshot'
@@ -27,7 +26,7 @@ install:
   - echo "extension = swoole.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - cd ../
   - composer install
+  - php migrate.php
 
 test:
-  - php migrate.php
   - vendor/bin/phpunit
