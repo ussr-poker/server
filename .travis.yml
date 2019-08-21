@@ -17,14 +17,13 @@ before_install:
   - psql -c "CREATE DATABASE ussr_poker;" -U postgres -p ${DB_PORT}
   - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres -p ${DB_PORT}
 
+cache:
+  directories:
+    - /home/travis/swoole-src/modules
+    - /home/travis/swoole-src/libs
+
 install:
-  - git clone https://github.com/swoole/swoole-src.git
-  - cd swoole-src
-  - phpize
-  - ./configure --enable-sockets
-  - make -j 4 && make install
-  - echo "extension = swoole.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - cd ../
+  - (cd ~ && bash travis_swoole.sh)
   - composer install
   - php migrate.php
 
