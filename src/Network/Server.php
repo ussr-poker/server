@@ -3,14 +3,12 @@ declare(strict_types=1);
 
 namespace App\Network;
 
-use App\Game\Cards\Card;
 use App\Game\Events\PlayerMove as PlayerMoveEvent;
 use App\Game\Events\PlayerStake as PlayerStakeEvent;
 use App\Game\Events\RoundFinished;
 use App\Game\Events\RoundStarted;
 use App\Game\Events\SubRoundFinished;
 use App\Game\Events\SubRoundStarted;
-use App\Game\Player;
 use App\Game\Room;
 use App\Game\Round\RoundResult;
 use App\Network\Commands\CommandInterface;
@@ -366,27 +364,11 @@ class Server
     public function onSubRoundStarted(SubRoundStarted $event): void
     {
         $subRound = $event->getSubRound();
-        $round = $subRound->getRound();
 
         $data = [
             'number' => $subRound->getNumber(),
             'awaitedPlayerId' => $subRound->getRound()->getPlayerAwaited()->id ?? null
         ];
-
-        if (null === $data['awaitedPlayerId']) {
-            \logger()->info('awaitedPlayerId is null', [
-                'round' => [
-                    'number' => $round->getNumber(),
-                    'state' => $round->getState(),
-                    'stakesOrder' => \array_map(fn(Player $player, $key) => [$key, $player->name], $round->getStakesOrder(), \array_keys($round->getStakesOrder())),
-                ],
-                'subround' => [
-                    'number' => $subRound->getNumber(),
-                    'movesCount' => $subRound->getMovesCount(),
-                    'playersOrder' => \array_map(fn(Player $player, $key) => [$key, $player->name], $subRound->getPlayersOrder(), array_keys($subRound->getPlayersOrder())),
-                ]
-            ]);
-        }
 
         $this->broadcast($subRound->getRound()->getGame()->getRoom(), 1005, $data);
     }
@@ -448,8 +430,6 @@ class Server
         if (!$this->server->isEstablished($fd)) {
             \logger()->info('Disconnected client', [
                 'fd' => $fd,
-                'id' => $this->clients[$fd]->getUser(),
-                'name' => $this->clients[$fd]->getUser()->name,
             ]);
 
             unset($this->clients[$fd]);
