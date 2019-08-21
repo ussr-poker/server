@@ -7,7 +7,7 @@ use App\Database\Database;
 use App\Network\Client;
 use App\Network\Commands\LoginCommand;
 use App\Network\Commands\RegisterCommand;
-use Monolog\Test\TestCase;
+use App\Tests\TestCase;
 
 class LoginCommandTest extends TestCase
 {

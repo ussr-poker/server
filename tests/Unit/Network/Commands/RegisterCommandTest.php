@@ -6,7 +6,7 @@ namespace App\Tests\Unit\Network\Commands;
 use App\Database\Database;
 use App\Network\Client;
 use App\Network\Commands\RegisterCommand;
-use Monolog\Test\TestCase;
+use App\Tests\TestCase;
 
 class RegisterCommandTest extends TestCase
 {

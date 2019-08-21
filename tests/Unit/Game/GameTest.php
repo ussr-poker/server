@@ -10,7 +10,7 @@ use App\Game\Player;
 use App\Game\Room;
 use App\Game\Round\PlayerDeck;
 use App\Network\Client;
-use PHPUnit\Framework\TestCase;
+use App\Tests\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class GameTest extends TestCase

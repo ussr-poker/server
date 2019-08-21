@@ -3,15 +3,19 @@ language: php
 php:
   - '7.4snapshot'
 
-env:
-  global:
-    - POSTGRES_DB: ussr_poker
-
-services:
-  - postgresql
-
 addons:
-  postgresql: "11.5"
+  postgresql: "11.2"
+
+env:
+  - DB_HOST=postgres
+  - DB_NAME=ussr_poker
+  - DB_USER=ussr_poker
+  - DB_PASS=secret
+  - DB_PORT=5432
+
+before_install:
+  - psql -c "CREATE DATABASE ussr_poker;" -U postgres
+  - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres
 
 install:
   - printf "\n" | pecl install swoole

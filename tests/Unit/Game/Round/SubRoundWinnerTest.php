@@ -8,7 +8,7 @@ use App\Game\Room;
 use App\Game\Round\JokerMove;
 use App\Tests\Helpers\SubRoundConditions;
 use App\Tests\Helpers\SubRoundConditionsBuilder;
-use PHPUnit\Framework\TestCase;
+use App\Tests\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 
 class SubRoundWinnerTest extends TestCase
