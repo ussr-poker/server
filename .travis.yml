@@ -19,9 +19,8 @@ env:
     - DB_PORT=5433
 
 before_install:
-  - sudo systemctl status postgresql@11-main
-  - psql -c "CREATE DATABASE ussr_poker;" -U postgres
-  - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres
+  - psql -c "CREATE DATABASE ussr_poker;" -U postgres -p ${PG_PORT}
+  - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres -p ${PG_PORT}
 
 install:
   - git clone https://github.com/swoole/swoole-src.git
@@ -29,10 +28,8 @@ install:
   - phpize
   - ./configure --enable-sockets
   - make -j 4 && make install
-  - cd ../
-  - rm -rf swoole-src
   - echo "extension = swoole.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
-  - php --ri swoole
+  - cd ../
   - composer install
 
 test:
