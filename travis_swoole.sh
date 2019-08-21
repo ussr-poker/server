@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+cd ~
+
 if [[ -d "swoole-src" ]]
 then
     cd swoole-src

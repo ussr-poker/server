@@ -23,7 +23,7 @@ cache:
     - /home/travis/swoole-src/libs
 
 install:
-  - (cd ~ && bash travis_swoole.sh)
+  - bash travis_swoole.sh
   - composer install
   - php migrate.php
 
