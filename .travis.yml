@@ -15,8 +15,8 @@ env:
     - DB_PORT=5432
 
 before_install:
-  - psql -c "CREATE DATABASE ussr_poker;" -U postgres -p ${PG_PORT}
-  - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres -p ${PG_PORT}
+  - psql -c "CREATE DATABASE ussr_poker;" -U postgres -p ${DB_PORT}
+  - psql -c "CREATE USER ussr_poker WITH PASSWORD 'secret';" -U postgres -p ${DB_PORT}
 
 install:
   - git clone https://github.com/swoole/swoole-src.git
