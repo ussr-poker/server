@@ -26,7 +26,6 @@ install:
   - make -j 4 && make install
   - echo "extension = swoole.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - cd ../
-  - phpenv config-rm xdebug.ini
   - composer install
 
 test:
