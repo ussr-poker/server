@@ -1,3 +1,4 @@
+dist: bionic
 language: php
 php:
   - '7.4snapshot'
@@ -12,7 +13,7 @@ addons:
 env:
   global:
     - PG_PORT=5433
-    - DB_HOST=postgres
+    - DB_HOST=127.0.0.1
     - DB_NAME=ussr_poker
     - DB_USER=ussr_poker
     - DB_PASS=secret
@@ -33,6 +34,7 @@ install:
   - make -j 4 && make install
   - echo "extension = swoole.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
   - cd ../
+  - phpenv config-rm xdebug.ini
   - composer install
 
 test:
